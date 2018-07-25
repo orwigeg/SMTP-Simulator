@@ -134,7 +134,7 @@ def smtp_send(password, message_info, message_text):
     first_line = look_for_newline(server_socket)
     parse_and_send(first_line, b'2', b'2', b'0', "EHLO ".encode()+SMTP_DOMAINNAME.encode()+b"\r\n", server_socket)
 
-    temp = pass_in_to_parse_ehlo(server_socket)
+    pass_in_to_parse_ehlo(server_socket)
     server_socket.send(b'STARTTLS\r\n')
 
     next_line = look_for_newline(server_socket)
@@ -144,19 +144,17 @@ def smtp_send(password, message_info, message_text):
 
     parse_and_send(next_line, b'2', b'2', b'0', "EHLO ".encode()+SMTP_DOMAINNAME.encode()+b'\r\n', wrapped_socket)
 
-    temp2 = pass_in_to_parse_ehlo(wrapped_socket)
+    pass_in_to_parse_ehlo(wrapped_socket)
     wrapped_socket.send(b"AUTH LOGIN\r\n")
 
-    temp_list_1 = look_for_newline(wrapped_socket)
-    temp_list_as_string_1 = concatenate(temp_list_1)
+    parsed_header = concatenate(look_for_newline(wrapped_socket))
 
-    compare_equivalence_and_send(b""+temp_list_as_string_1+b'\n', base64.encodebytes(b"Username:"), wrapped_socket,
+    compare_equivalence_and_send(b""+parsed_header+b'\n', base64.encodebytes(b"Username:"), wrapped_socket,
                                  message_info['From'].encode())
 
-    temp_list_2 = look_for_newline(wrapped_socket)
-    temp_list_as_string_2 = concatenate(temp_list_2)
+    parsed_context = concatenate(look_for_newline(wrapped_socket))
 
-    compare_equivalence_and_send(b""+temp_list_as_string_2+b'\n', base64.encodebytes(b"Password:"), wrapped_socket, password.encode())
+    compare_equivalence_and_send(b""+parsed_context+b'\n', base64.encodebytes(b"Password:"), wrapped_socket, password.encode())
 
     verification = look_for_newline(wrapped_socket)
     parse_and_send(verification, b'2', b'3', b'5', b"MAIL FROM:"+b"<"+message_info['From'].encode()+b">\r\n", wrapped_socket)
@@ -191,15 +189,15 @@ def compare_equivalence_and_send(proposition1, proposition2, wrapped_socket, mes
         raise Exception("An error occurred verifying the username")
 
 
-def concatenate(temp_list_1):
+def concatenate(list):
     """
-    :param temp_list_1:
+    :param list:
     :return:
     """
-    temp_list_as_string_1 = b""
-    for i in range(4, len(temp_list_1) - 1):
-        temp_list_as_string_1 = temp_list_as_string_1 + temp_list_1[i]
-    return temp_list_as_string_1
+    list_as_string = b""
+    for i in range(4, len(list) - 1):
+        list_as_string = list_as_string + list[i]
+    return list_as_string
 
 
 def parse_and_send(line, code1, code2, code3, message, socket):
@@ -223,15 +221,14 @@ def pass_in_to_parse_ehlo(socket):
     :param socket:
     :return:
     """
-    temp = []
-    temp.append(b'1')
-    temp.append(b'2')
-    temp.append(b'3')
-    temp.append(b'4')
-    #print(temp)
-    while temp[3].decode() != " ":
-        temp = parse_extended_hello(socket)
-    return temp
+    temporary_socket = []
+    temporary_socket.append(b'1')
+    temporary_socket.append(b'2')
+    temporary_socket.append(b'3')
+    temporary_socket.append(b'4')
+    while temporary_socket[3].decode() != " ":
+        temporary_socket = parse_extended_hello(socket)
+    return temporary_socket
 
 
 def look_for_newline(socket):
@@ -253,10 +250,10 @@ def parse_extended_hello(socket):
         '''
         want to write loop that goes through looking for \r\n and then parses through them to find the dash.
         '''
-        temp = look_for_newline(socket)
-        while temp[3].decode() == "-":
-            temp = look_for_newline(socket)
-        return temp
+        socket_data = look_for_newline(socket)
+        while socket_data[3].decode() == "-":
+            socket_data = look_for_newline(socket)
+        return socket_data
 
 
 # Utility functions
