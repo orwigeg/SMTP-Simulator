@@ -1,6 +1,5 @@
 """
 :author: Elizabeth Orwig
-GUI help from Tripp Horbinksi
 
 A simple email sending program.
 """
